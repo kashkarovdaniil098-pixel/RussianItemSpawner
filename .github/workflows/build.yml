@@ -13,10 +13,8 @@ jobs:
       - name: Download project
         uses: actions/checkout@v4
 
-      - name: Install .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 6.0.x
+      - name: Add build environment
+        uses: Pathoschild/SMAPI-ModBuildWorkflow/add-build-environment@v1
 
       - name: Build mod
         run: dotnet build RussianItemSpawner.csproj -c Release
