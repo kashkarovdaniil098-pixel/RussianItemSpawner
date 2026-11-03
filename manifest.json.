@@ -1,0 +1,10 @@
+{
+  "Name": "RussianItemSpawner",
+  "Author": "ModCreator",
+  "Version": "1.0.0",
+  "Description": "Russian Item Spawner",
+  "UniqueID": "ModCreator.RussianItemSpawner",
+  "EntryDll": "RussianItemSpawner.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}
