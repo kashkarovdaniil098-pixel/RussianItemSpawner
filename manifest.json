@@ -1,0 +1,9 @@
+{
+  "Name": "Русский спавнер предметов",
+  "Author": "Player",
+  "Version": "1.0.0",
+  "Description": "Спавнер предметов на русском языке",
+  "UniqueID": "Player.RussianItemSpawner",
+  "EntryDll": "RussianItemSpawner.dll",
+  "MinimumApiVersion": "4.0.0"
+}
