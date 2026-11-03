@@ -1,0 +1,28 @@
+name: Build RussianItemSpawner
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Build mod
+        run: dotnet build RussianItemSpawner.csproj -c Release
+
+      - name: Save mod files
+        uses: actions/upload-artifact@v4
+        with:
+          name: RussianItemSpawner
+          path: bin/Release/net6.0/
