@@ -1,5 +1,4 @@
 
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,19 +7,18 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.GameData.Objects;
 
 namespace RussianItemSpawner
 {
     public class ModEntry : Mod
     {
         private bool menuOpen;
-        private int selectedItem;
-        private int quantity = 10;
         private int page;
-        private char searchLetter = '\0';
+        private int selected = -1;
+        private int quantity = 10;
+        private char letter = '\0';
 
-        private const int ItemsPerPage = 6;
+        private const int PerPage = 6;
 
         private readonly List<(string name, string id)> items = new();
 
@@ -36,9 +34,6 @@ namespace RussianItemSpawner
         private static readonly Rectangle CloseButton =
             new Rectangle(360, 76, 34, 30);
 
-        private static readonly Rectangle GetButton =
-            new Rectangle(110, 450, 180, 38);
-
         public override void Entry(IModHelper helper)
         {
             LoadItems();
@@ -46,10 +41,8 @@ namespace RussianItemSpawner
             helper.Events.Display.RenderedHud += OnRenderedHud;
             helper.Events.Input.ButtonPressed += OnButtonPressed;
 
-            Monitor.Log(
-                "Russian Item Spawner загружен. Предметов: " + items.Count,
-                LogLevel.Info
-            );
+            Monitor.Log("ITEM PRO загружен. Предметов: " + items.Count,
+                LogLevel.Info);
         }
 
         private void LoadItems()
@@ -57,7 +50,7 @@ namespace RussianItemSpawner
             try
             {
                 var data = Helper.GameContent.Load<
-                    Dictionary<string, ObjectData>
+                    Dictionary<string, StardewValley.GameData.Objects.ObjectData>
                 >("Data/Objects");
 
                 items.Clear();
@@ -68,248 +61,144 @@ namespace RussianItemSpawner
                         string.IsNullOrWhiteSpace(entry.Value.Name))
                         continue;
 
-                    items.Add((
-                        entry.Value.Name,
-                        "(O)" + entry.Key
-                    ));
+                    items.Add((entry.Value.Name, "(O)" + entry.Key));
                 }
 
                 items.Sort((a, b) =>
-                    string.Compare(
-                        a.name,
-                        b.name,
-                        StringComparison.CurrentCultureIgnoreCase
-                    )
-                );
-
-                Monitor.Log(
-                    "Загружено объектов: " + items.Count,
-                    LogLevel.Info
-                );
+                    string.Compare(a.name, b.name,
+                        StringComparison.CurrentCultureIgnoreCase));
             }
             catch (Exception ex)
             {
-                Monitor.Log(
-                    "Не удалось загрузить каталог: " + ex.Message,
-                    LogLevel.Error
-                );
+                Monitor.Log("Ошибка каталога: " + ex.Message,
+                    LogLevel.Error);
             }
         }
 
-        private List<(string name, string id)> GetFilteredItems()
+        private List<(string name, string id)> Filtered()
         {
-            if (searchLetter == '\0')
+            if (letter == '\0')
                 return items;
 
-            return items
-                .Where(item =>
-                    item.name.Length > 0 &&
-                    char.ToUpperInvariant(item.name[0]) == searchLetter
-                )
-                .ToList();
+            return items.Where(x =>
+                x.name.Length > 0 &&
+                char.ToUpperInvariant(x.name[0]) == letter
+            ).ToList();
         }
 
-        private void OnRenderedHud(
-            object? sender,
-            RenderedHudEventArgs e
-        )
+        private void DrawBox(SpriteBatch b, Rectangle r, Color color)
+        {
+            b.Draw(Game1.staminaRect, r, color);
+        }
+
+        private void OnRenderedHud(object? sender, RenderedHudEventArgs e)
         {
             SpriteBatch b = e.SpriteBatch;
 
             DrawBox(b, OpenButton, new Color(45, 115, 65));
-
-            b.DrawString(
-                Game1.smallFont,
-                "ITEM",
-                new Vector2(44, 27),
-                Color.White
-            );
+            b.DrawString(Game1.smallFont, "ITEM",
+                new Vector2(44, 27), Color.White);
 
             if (!menuOpen)
                 return;
 
             DrawBox(b, Panel, new Color(35, 38, 42));
 
-            b.DrawString(
-                Game1.smallFont,
-                "ITEM SPAWNER",
-                new Vector2(28, 82),
-                Color.White
-            );
+            b.DrawString(Game1.smallFont, "ITEM PRO",
+                new Vector2(28, 82), Color.White);
 
             DrawBox(b, CloseButton, Color.DarkRed);
+            b.DrawString(Game1.smallFont, "X",
+                new Vector2(371, 82), Color.White);
 
-            b.DrawString(
-                Game1.smallFont,
-                "X",
-                new Vector2(371, 82),
-                Color.White
-            );
-
-            b.DrawString(
-                Game1.smallFont,
-                "Выбери букву:",
-                new Vector2(28, 110),
-                Color.White
-            );
-
-            DrawBox(
-                b,
-                new Rectangle(25, 128, 36, 25),
-                searchLetter == '\0' ? Color.DarkGreen : Color.Gray
-            );
-
-            b.DrawString(
-                Game1.smallFont,
-                "ВС",
-                new Vector2(32, 132),
-                Color.White
-            );
+            DrawBox(b, new Rectangle(25, 112, 38, 27),
+                letter == '\0' ? Color.DarkGreen : Color.Gray);
+            b.DrawString(Game1.smallFont, "ВС",
+                new Vector2(30, 116), Color.White);
 
             for (int i = 0; i < Alphabet.Length; i++)
             {
                 int x = 65 + (i % 8) * 40;
-                int y = 128 + (i / 8) * 28;
+                int y = 112 + (i / 8) * 27;
 
                 Rectangle r = new Rectangle(x, y, 36, 25);
+                DrawBox(b, r, letter == Alphabet[i]
+                    ? Color.DarkGreen : Color.Gray);
 
-                DrawBox(
-                    b,
-                    r,
-                    searchLetter == Alphabet[i]
-                        ? Color.DarkGreen
-                        : Color.Gray
-                );
-
-                b.DrawString(
-                    Game1.smallFont,
-                    Alphabet[i].ToString(),
-                    new Vector2(x + 9, y + 3),
-                    Color.White
-                );
+                b.DrawString(Game1.smallFont, Alphabet[i].ToString(),
+                    new Vector2(x + 9, y + 3), Color.White);
             }
 
-            var filtered = GetFilteredItems();
-
-            int maxPage = Math.Max(
-                0,
-                (filtered.Count - 1) / ItemsPerPage
-            );
-
+            var list = Filtered();
+            int maxPage = Math.Max(0, (list.Count - 1) / PerPage);
             page = Math.Min(page, maxPage);
 
-            DrawBox(
-                b,
-                new Rectangle(25, 235, 45, 25),
-                Color.Gray
-            );
+            b.DrawString(Game1.smallFont,
+                "Предметов: " + list.Count +
+                "   Страница: " + (page + 1) + "/" + (maxPage + 1),
+                new Vector2(28, 220), Color.White);
 
-            b.DrawString(
-                Game1.smallFont,
-                "<",
-                new Vector2(40, 237),
-                Color.White
-            );
-
-            DrawBox(
-                b,
-                new Rectangle(340, 235, 45, 25),
-                Color.Gray
-            );
-
-            b.DrawString(
-                Game1.smallFont,
-                ">",
-                new Vector2(355, 237),
-                Color.White
-            );
-
-            b.DrawString(
-                Game1.smallFont,
-                "Предметы: " + filtered.Count +
-                "   Страница: " + (page + 1) +
-                "/" + (maxPage + 1),
-                new Vector2(80, 240),
-                Color.White
-            );
-
-            for (int i = 0; i < ItemsPerPage; i++)
+            for (int i = 0; i < PerPage; i++)
             {
-                int index = page * ItemsPerPage + i;
-
-                if (index >= filtered.Count)
+                int index = page * PerPage + i;
+                if (index >= list.Count)
                     break;
 
-                Rectangle r = new Rectangle(
-                    28,
-                    265 + i * 26,
-                    350,
-                    24
-                );
+                int x = 28 + (i % 3) * 120;
+                int y = 245 + (i / 3) * 78;
 
-                DrawBox(
-                    b,
-                    r,
-                    i == selectedItem
-                        ? Color.SteelBlue
-                        : Color.Gray
-                );
+                Rectangle card = new Rectangle(x, y, 110, 70);
+                DrawBox(b, card,
+                    selected == i ? Color.SteelBlue : Color.Gray);
 
-                b.DrawString(
-                    Game1.smallFont,
-                    filtered[index].name,
-                    new Vector2(r.X + 8, r.Y + 3),
-                    Color.White
-                );
+                try
+                {
+                    var item = ItemRegistry.Create(list[index].id);
+                    Texture2D texture = item.GetTexture();
+                    Rectangle source = item.GetSourceRect();
+
+                    b.Draw(texture,
+                        new Rectangle(x + 38, y + 3, 32, 32),
+                        source, Color.White);
+                }
+                catch
+                {
+                    // Если текстура недоступна, остаётся карточка с названием.
+                }
+
+                b.DrawString(Game1.smallFont,
+                    list[index].name.Length > 15
+                        ? list[index].name.Substring(0, 15)
+                        : list[index].name,
+                    new Vector2(x + 4, y + 42), Color.White);
             }
 
-            DrawBox(
-                b,
-                new Rectangle(28, 425, 55, 28),
-                Color.DarkRed
-            );
+            DrawBox(b, new Rectangle(28, 410, 65, 35), Color.Gray);
+            DrawBox(b, new Rectangle(315, 410, 65, 35), Color.DarkGreen);
 
-            DrawBox(
-                b,
-                new Rectangle(320, 425, 55, 28),
-                Color.DarkGreen
-            );
+            b.DrawString(Game1.smallFont, "<",
+                new Vector2(54, 416), Color.White);
+            b.DrawString(Game1.smallFont, ">",
+                new Vector2(340, 416), Color.White);
 
-            b.DrawString(
-                Game1.smallFont,
-                "-",
-                new Vector2(48, 428),
-                Color.White
-            );
+            DrawBox(b, new Rectangle(100, 410, 55, 35), Color.DarkRed);
+            DrawBox(b, new Rectangle(255, 410, 55, 35), Color.DarkGreen);
 
-            b.DrawString(
-                Game1.smallFont,
-                "+",
-                new Vector2(339, 428),
-                Color.White
-            );
+            b.DrawString(Game1.smallFont, "-",
+                new Vector2(120, 416), Color.White);
+            b.DrawString(Game1.smallFont, "+",
+                new Vector2(275, 416), Color.White);
 
-            b.DrawString(
-                Game1.smallFont,
-                "Количество: " + quantity,
-                new Vector2(110, 430),
-                Color.White
-            );
+            b.DrawString(Game1.smallFont, "Кол-во: " + quantity,
+                new Vector2(160, 418), Color.White);
 
-            DrawBox(b, GetButton, Color.DarkGreen);
-
-            b.DrawString(
-                Game1.smallFont,
-                "ПОЛУЧИТЬ",
-                new Vector2(155, 460),
-                Color.White
-            );
+            DrawBox(b, new Rectangle(110, 455, 180, 35),
+                Color.DarkGreen);
+            b.DrawString(Game1.smallFont, "ПОЛУЧИТЬ",
+                new Vector2(155, 463), Color.White);
         }
 
-        private void OnButtonPressed(
-            object? sender,
-            ButtonPressedEventArgs e
-        )
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
             if (e.Button != SButton.MouseLeft)
                 return;
@@ -331,123 +220,98 @@ namespace RussianItemSpawner
                 return;
             }
 
-            if (new Rectangle(25, 128, 36, 25).Contains(p))
+            if (new Rectangle(25, 112, 38, 27).Contains(p))
             {
-                searchLetter = '\0';
+                letter = '\0';
                 page = 0;
-                selectedItem = 0;
+                selected = -1;
                 return;
             }
 
             for (int i = 0; i < Alphabet.Length; i++)
             {
                 int x = 65 + (i % 8) * 40;
-                int y = 128 + (i / 8) * 28;
+                int y = 112 + (i / 8) * 27;
 
-                Rectangle r = new Rectangle(x, y, 36, 25);
-
-                if (r.Contains(p))
+                if (new Rectangle(x, y, 36, 25).Contains(p))
                 {
-                    searchLetter = Alphabet[i];
+                    letter = Alphabet[i];
                     page = 0;
-                    selectedItem = 0;
+                    selected = -1;
                     return;
                 }
             }
 
-            var filtered = GetFilteredItems();
+            var list = Filtered();
+            int maxPage = Math.Max(0, (list.Count - 1) / PerPage);
 
-            int maxPage = Math.Max(
-                0,
-                (filtered.Count - 1) / ItemsPerPage
-            );
-
-            if (new Rectangle(25, 235, 45, 25).Contains(p))
+            if (new Rectangle(28, 410, 65, 35).Contains(p))
             {
                 page = Math.Max(0, page - 1);
-                selectedItem = 0;
+                selected = -1;
                 return;
             }
 
-            if (new Rectangle(340, 235, 45, 25).Contains(p))
+            if (new Rectangle(315, 410, 65, 35).Contains(p))
             {
                 page = Math.Min(maxPage, page + 1);
-                selectedItem = 0;
+                selected = -1;
                 return;
             }
 
-            for (int i = 0; i < ItemsPerPage; i++)
+            for (int i = 0; i < PerPage; i++)
             {
-                Rectangle r = new Rectangle(
-                    28,
-                    265 + i * 26,
-                    350,
-                    24
-                );
+                int x = 28 + (i % 3) * 120;
+                int y = 245 + (i / 3) * 78;
+                int index = page * PerPage + i;
 
-                int index = page * ItemsPerPage + i;
-
-                if (r.Contains(p) && index < filtered.Count)
+                if (index < list.Count &&
+                    new Rectangle(x, y, 110, 70).Contains(p))
                 {
-                    selectedItem = i;
+                    selected = i;
                     return;
                 }
             }
 
-            if (new Rectangle(28, 425, 55, 28).Contains(p))
+            if (new Rectangle(100, 410, 55, 35).Contains(p))
             {
                 quantity = Math.Max(1, quantity - 1);
                 return;
             }
 
-            if (new Rectangle(320, 425, 55, 28).Contains(p))
+            if (new Rectangle(255, 410, 55, 35).Contains(p))
             {
                 quantity = Math.Min(999, quantity + 1);
                 return;
             }
 
-            if (GetButton.Contains(p) &&
+            if (new Rectangle(110, 455, 180, 35).Contains(p) &&
                 Context.IsWorldReady &&
-                filtered.Count > 0)
+                selected >= 0)
             {
-                int index = page * ItemsPerPage + selectedItem;
+                int index = page * PerPage + selected;
 
-                if (index < 0 || index >= filtered.Count)
+                if (index >= list.Count)
                     return;
 
                 try
                 {
-                    var selected = filtered[index];
-
                     var item = ItemRegistry.Create(
-                        selected.id,
-                        quantity
-                    );
+                        list[index].id, quantity);
 
                     Game1.player.addItemToInventory(item);
 
-                    Monitor.Log(
-                        "Выдан предмет: " + selected.name,
-                        LogLevel.Info
-                    );
+                    Monitor.Log("Выдано: " + list[index].name,
+                        LogLevel.Info);
                 }
                 catch (Exception ex)
                 {
-                    Monitor.Log(
-                        "Ошибка выдачи: " + ex.Message,
-                        LogLevel.Error
-                    );
+                    Monitor.Log("Ошибка выдачи: " + ex.Message,
+                        LogLevel.Error);
                 }
             }
         }
-
-        private static void DrawBox(
-            SpriteBatch b,
-            Rectangle area,
-            Color color
-        )
-        {
-            b.Draw(Game1.staminaRect, area, color);
-        }
     }
 }
+
+
