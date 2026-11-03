@@ -113,6 +113,7 @@ namespace RussianItemSpawner
 
             DrawBox(b, new Rectangle(25, 112, 38, 27),
                 letter == '\0' ? Color.DarkGreen : Color.Gray);
+
             b.DrawString(Game1.smallFont, "ВС",
                 new Vector2(30, 116), Color.White);
 
@@ -122,6 +123,7 @@ namespace RussianItemSpawner
                 int y = 112 + (i / 8) * 27;
 
                 Rectangle r = new Rectangle(x, y, 36, 25);
+
                 DrawBox(b, r, letter == Alphabet[i]
                     ? Color.DarkGreen : Color.Gray);
 
@@ -141,6 +143,7 @@ namespace RussianItemSpawner
             for (int i = 0; i < PerPage; i++)
             {
                 int index = page * PerPage + i;
+
                 if (index >= list.Count)
                     break;
 
@@ -148,22 +151,33 @@ namespace RussianItemSpawner
                 int y = 245 + (i / 3) * 78;
 
                 Rectangle card = new Rectangle(x, y, 110, 70);
+
                 DrawBox(b, card,
                     selected == i ? Color.SteelBlue : Color.Gray);
 
                 try
                 {
                     var item = ItemRegistry.Create(list[index].id);
-                    Texture2D texture = item.GetTexture();
-                    Rectangle source = item.GetSourceRect();
 
-                    b.Draw(texture,
-                        new Rectangle(x + 38, y + 3, 32, 32),
-                        source, Color.White);
+                    if (item is StardewValley.Object obj)
+                    {
+                        Rectangle source =
+                            Game1.getSourceRectForStandardTileSheet(
+                                Game1.objectSpriteSheet,
+                                obj.ParentSheetIndex
+                            );
+
+                        b.Draw(
+                            Game1.objectSpriteSheet,
+                            new Rectangle(x + 38, y + 3, 32, 32),
+                            source,
+                            Color.White
+                        );
+                    }
                 }
                 catch
                 {
-                    // Если текстура недоступна, остаётся карточка с названием.
+                    // Если картинка недоступна, показываем название.
                 }
 
                 b.DrawString(Game1.smallFont,
@@ -178,6 +192,7 @@ namespace RussianItemSpawner
 
             b.DrawString(Game1.smallFont, "<",
                 new Vector2(54, 416), Color.White);
+
             b.DrawString(Game1.smallFont, ">",
                 new Vector2(340, 416), Color.White);
 
@@ -186,6 +201,7 @@ namespace RussianItemSpawner
 
             b.DrawString(Game1.smallFont, "-",
                 new Vector2(120, 416), Color.White);
+
             b.DrawString(Game1.smallFont, "+",
                 new Vector2(275, 416), Color.White);
 
@@ -194,6 +210,7 @@ namespace RussianItemSpawner
 
             DrawBox(b, new Rectangle(110, 455, 180, 35),
                 Color.DarkGreen);
+
             b.DrawString(Game1.smallFont, "ПОЛУЧИТЬ",
                 new Vector2(155, 463), Color.White);
         }
@@ -315,3 +332,4 @@ namespace RussianItemSpawner
 }
 
 
+                    
